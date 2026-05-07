@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: pagamentos
+  h2:
+    console:
+      # Habilita console do h2 para visualização dos registros criados
+      enabled: true
+      path: /h2-console
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+server:
+  # Usa porta 8081 pois a porta 8080 é utilizada pelo mock
+  port: 8081
