@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.tce.pagamentos.entity.TipoUsuario;
-import org.tce.pagamentos.validation.annotation.CpfOuCnpj;
+import org.tce.pagamentos.validation.annotation.SenhaForte;
 import org.tce.pagamentos.validation.annotation.ValidaDocumentoPorTipo;
 
 @Data
@@ -16,14 +16,14 @@ public class UsuarioDTO {
     private String nomeCompleto;
 
     @NotBlank(message = "Número do documento é obrigatório")
-    @CpfOuCnpj
     private String numeroDocumento;
 
     @NotBlank(message = "Email é obrigatório")
     @Email(message = "Email informado é inválido")
     private String email;
 
-    @NotBlank(message = "Senha é obrigatório")
+    @NotBlank(message = "Senha é obrigatória")
+    @SenhaForte
     private String senha;
 
     @NotNull(message = "Tipo de usuário é obrigatório")

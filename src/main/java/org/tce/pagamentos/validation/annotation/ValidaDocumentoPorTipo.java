@@ -14,7 +14,6 @@ public @interface ValidaDocumentoPorTipo {
 
     String message() default "Documento inválido para o tipo de usuário";
 
-
     // Usado para agrupar validações (grupo de criação, grupo de atualização etc.)
     Class<?>[] groups() default {};
 

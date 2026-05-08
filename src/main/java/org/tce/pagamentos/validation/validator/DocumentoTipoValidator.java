@@ -2,6 +2,7 @@ package org.tce.pagamentos.validation.validator;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import org.springframework.util.ObjectUtils;
 import org.tce.pagamentos.dto.UsuarioDTO;
 import org.tce.pagamentos.entity.TipoUsuario;
 import org.tce.pagamentos.validation.annotation.ValidaDocumentoPorTipo;
@@ -11,24 +12,68 @@ public class DocumentoTipoValidator implements ConstraintValidator<ValidaDocumen
     @Override
     public boolean isValid(UsuarioDTO dto, ConstraintValidatorContext context) {
 
-        if (dto == null || dto.getNumeroDocumento() == null || dto.getTipo() == null) {
-            return false;
+        if (dto == null) {
+            return true;
+        }
+
+        // Aqui irá retornar true porque a obrigatoriedade do campo já foi validada pela anotação @NotNull em UsuarioDTO
+        if (dto.getTipo() == null || ObjectUtils.isEmpty(dto.getNumeroDocumento())) {
+            return true;
         }
 
         String doc = dto.getNumeroDocumento();
 
         if (!doc.matches("\\d+")) {
+            context.disableDefaultConstraintViolation();
+            context.buildConstraintViolationWithTemplate(
+                            "Documento deve conter apenas números")
+                    .addPropertyNode("numeroDocumento")
+                    .addConstraintViolation();
             return false;
         }
 
         if (dto.getTipo() == TipoUsuario.PF) {
-            return doc.length() == 11;
+
+            if (doc.length() != 11) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate(
+                                "Para PF o documento deve ter 11 dígitos (CPF)")
+                        .addPropertyNode("numeroDocumento")
+                        .addConstraintViolation();
+                return false;
+            }
+
+            if (!CpfValidator.isValid(doc)) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate(
+                                "CPF inválido")
+                        .addPropertyNode("numeroDocumento")
+                        .addConstraintViolation();
+                return false;
+            }
         }
 
         if (dto.getTipo() == TipoUsuario.PJ) {
-            return doc.length() == 14;
+
+            if (doc.length() != 14) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate(
+                                "Para PJ o documento deve ter 14 dígitos (CNPJ)")
+                        .addPropertyNode("numeroDocumento")
+                        .addConstraintViolation();
+                return false;
+            }
+
+            if (!CnpjValidator.isValid(doc)) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate(
+                                "CNPJ inválido")
+                        .addPropertyNode("numeroDocumento")
+                        .addConstraintViolation();
+                return false;
+            }
         }
 
-        return false;
+        return true;
     }
 }
