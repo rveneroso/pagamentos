@@ -9,7 +9,7 @@ public class SenhaValidator implements ConstraintValidator<SenhaForte, String> {
     @Override
     public boolean isValid(String senha, ConstraintValidatorContext context) {
 
-        // Aqui irá retornar true porque a obrigatoriedade do campo já foi validada pela anotação @NotBlank em UsuarioDTO
+        // Retorna true indicando que a validação não se aplicará sobre o objeto com estado inválido (null ou vazio).
         if (senha == null || senha.isBlank()) {
             return true;
         }

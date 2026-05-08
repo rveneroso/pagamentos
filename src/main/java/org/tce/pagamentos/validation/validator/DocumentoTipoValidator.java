@@ -12,12 +12,11 @@ public class DocumentoTipoValidator implements ConstraintValidator<ValidaDocumen
     @Override
     public boolean isValid(UsuarioDTO dto, ConstraintValidatorContext context) {
 
-        if (dto == null) {
-            return true;
-        }
-
-        // Aqui irá retornar true porque a obrigatoriedade do campo já foi validada pela anotação @NotNull em UsuarioDTO
-        if (dto.getTipo() == null || ObjectUtils.isEmpty(dto.getNumeroDocumento())) {
+        // Retorna true indicando que a validação não se aplicará sobre o objeto com estado inválido (null ou vazio).
+        if (dto == null ||
+                dto.getTipo() == null ||
+                dto.getNumeroDocumento() == null ||
+                dto.getNumeroDocumento().isBlank()) {
             return true;
         }
 
