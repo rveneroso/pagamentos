@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.tce.pagamentos.dto.UsuarioDTO;
+import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
 import org.tce.pagamentos.entity.TipoUsuario;
 
 import jakarta.validation.ConstraintValidatorContext;
@@ -34,7 +34,6 @@ class DocumentoTipoValidatorTest {
     }
 
     // Cenários em que o dado está inconsistente e a validação não se aplica.
-
     @Test
     void deveRetornarTrueQuandoDtoForNull() {
         assertTrue(validator.isValid(null, context));
@@ -42,7 +41,7 @@ class DocumentoTipoValidatorTest {
 
     @Test
     void deveRetornarTrueQuandoTipoForNull() {
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setNumeroDocumento("123");
 
         assertTrue(validator.isValid(dto, context));
@@ -50,7 +49,7 @@ class DocumentoTipoValidatorTest {
 
     @Test
     void deveRetornarTrueQuandoDocumentoForNull() {
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setTipo(TipoUsuario.PF);
 
         assertTrue(validator.isValid(dto, context));
@@ -58,7 +57,7 @@ class DocumentoTipoValidatorTest {
 
     @Test
     void deveRetornarTrueQuandoDocumentoForVazio() {
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setTipo(TipoUsuario.PF);
         dto.setNumeroDocumento("   ");
 
@@ -73,7 +72,7 @@ class DocumentoTipoValidatorTest {
             "11111111111"
     })
     void deveRetornarFalseParaCpfInvalido(String documento) {
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setTipo(TipoUsuario.PF);
         dto.setNumeroDocumento(documento);
 
@@ -82,7 +81,7 @@ class DocumentoTipoValidatorTest {
 
     @Test
     void deveRetornarTrueQuandoCpfForValido() {
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setTipo(TipoUsuario.PF);
         dto.setNumeroDocumento("52998224725"); // CPF válido
 
@@ -90,10 +89,9 @@ class DocumentoTipoValidatorTest {
     }
 
     // Testes com CNPJ
-
     @Test
     void deveRetornarFalseQuandoCnpjTiverTamanhoIncorreto() {
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setTipo(TipoUsuario.PJ);
         dto.setNumeroDocumento("12345678901");
 
@@ -102,7 +100,7 @@ class DocumentoTipoValidatorTest {
 
     @Test
     void deveRetornarFalseQuandoCnpjForInvalido() {
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setTipo(TipoUsuario.PJ);
         dto.setNumeroDocumento("11111111111111");
 
@@ -111,7 +109,7 @@ class DocumentoTipoValidatorTest {
 
     @Test
     void deveRetornarTrueQuandoCnpjForValido() {
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setTipo(TipoUsuario.PJ);
         dto.setNumeroDocumento("11444777000161"); // CNPJ válido
 

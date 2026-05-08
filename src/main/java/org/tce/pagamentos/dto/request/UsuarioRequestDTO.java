@@ -1,4 +1,4 @@
-package org.tce.pagamentos.dto;
+package org.tce.pagamentos.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +10,7 @@ import org.tce.pagamentos.validation.annotation.ValidaDocumentoPorTipo;
 
 @Data
 @ValidaDocumentoPorTipo
-public class UsuarioDTO {
+public class UsuarioRequestDTO {
 
     @NotBlank(message = "Nome completo é obrigatório")
     private String nomeCompleto;

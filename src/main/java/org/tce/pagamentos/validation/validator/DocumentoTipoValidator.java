@@ -2,15 +2,14 @@ package org.tce.pagamentos.validation.validator;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import org.springframework.util.ObjectUtils;
-import org.tce.pagamentos.dto.UsuarioDTO;
+import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
 import org.tce.pagamentos.entity.TipoUsuario;
 import org.tce.pagamentos.validation.annotation.ValidaDocumentoPorTipo;
 
-public class DocumentoTipoValidator implements ConstraintValidator<ValidaDocumentoPorTipo, UsuarioDTO> {
+public class DocumentoTipoValidator implements ConstraintValidator<ValidaDocumentoPorTipo, UsuarioRequestDTO> {
 
     @Override
-    public boolean isValid(UsuarioDTO dto, ConstraintValidatorContext context) {
+    public boolean isValid(UsuarioRequestDTO dto, ConstraintValidatorContext context) {
 
         // Retorna true indicando que a validação não se aplicará sobre o objeto com estado inválido (null ou vazio).
         if (dto == null ||

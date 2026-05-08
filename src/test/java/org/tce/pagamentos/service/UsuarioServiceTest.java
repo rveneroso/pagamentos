@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.tce.pagamentos.dto.UsuarioDTO;
+import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
 import org.tce.pagamentos.entity.TipoUsuario;
 import org.tce.pagamentos.entity.Usuario;
 import org.tce.pagamentos.repository.UsuarioRepository;
@@ -28,11 +28,11 @@ class UsuarioServiceTest {
     @InjectMocks
     private UsuarioService service;
 
-    private UsuarioDTO dto;
+    private UsuarioRequestDTO dto;
 
     @BeforeEach
     void setUp() {
-        dto = new UsuarioDTO();
+        dto = new UsuarioRequestDTO();
         dto.setNomeCompleto("João Silva");
         dto.setEmail("joao@email.com");
         dto.setNumeroDocumento("52998224725");

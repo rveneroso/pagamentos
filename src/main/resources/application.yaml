@@ -1,6 +1,12 @@
 spring:
   application:
     name: pagamentos
+  # Permite a exibição de erros de rota
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
   h2:
     console:
       # Habilita console do h2 para visualização dos registros criados
@@ -15,3 +21,7 @@ spring:
 server:
   # Usa porta 8081 pois a porta 8080 é utilizada pelo mock
   port: 8081
+
+security:
+  # Acesso aos endpoints será feito com validação do header x-api-key pois a aplicação não possui mecanismo de autenticação
+  api-key: 123456

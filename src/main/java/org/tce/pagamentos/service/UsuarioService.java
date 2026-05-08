@@ -3,8 +3,10 @@ package org.tce.pagamentos.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.tce.pagamentos.exception.BusinessException;
+import org.tce.pagamentos.mapper.UsuarioMapper;
 import org.tce.pagamentos.repository.UsuarioRepository;
-import org.tce.pagamentos.dto.UsuarioDTO;
+import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
 
 import org.tce.pagamentos.entity.Usuario;
 
@@ -18,21 +20,18 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
 
 
-    public Usuario salvar(UsuarioDTO dto) {
+    public Usuario salvar(UsuarioRequestDTO dto) {
 
-        Usuario usuario = new Usuario();
-        usuario.setNomeCompleto(dto.getNomeCompleto());
-        usuario.setNumeroDocumento(dto.getNumeroDocumento());
-        usuario.setEmail(dto.getEmail());
+        Usuario usuario = UsuarioMapper.toEntity(dto);
+
         usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
-        usuario.setTipo(dto.getTipo());
 
         if (repository.existsByEmail(usuario.getEmail())) {
-            throw new RuntimeException("Email já cadastrado");
+            throw new BusinessException("Email já cadastrado");
         }
 
         if (repository.existsByNumeroDocumento(usuario.getNumeroDocumento())) {
-            throw new RuntimeException("Número de documento já cadastrado");
+            throw new BusinessException("Número de documento já cadastrado");
         }
 
         return repository.save(usuario);

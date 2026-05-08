@@ -3,11 +3,12 @@ package org.tce.pagamentos.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.tce.pagamentos.dto.UsuarioDTO;
+import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
 import org.tce.pagamentos.entity.TipoUsuario;
 import org.tce.pagamentos.entity.Usuario;
 import org.tce.pagamentos.service.UsuarioService;
@@ -16,10 +17,13 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UsuarioController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class UsuarioControllerTest {
 
     @Autowired
@@ -37,9 +41,9 @@ class UsuarioControllerTest {
         Usuario usuario = new Usuario();
         usuario.setId(1L);
 
-        when(service.salvar(any(UsuarioDTO.class))).thenReturn(usuario);
+        when(service.salvar(any(UsuarioRequestDTO.class))).thenReturn(usuario);
 
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setNomeCompleto("João");
         dto.setEmail("joao@email.com");
         dto.setNumeroDocumento("52998224725");
@@ -55,16 +59,16 @@ class UsuarioControllerTest {
     @Test
     void deveRetornarErroQuandoDtoForInvalido() throws Exception {
 
-        UsuarioDTO dto = new UsuarioDTO();
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
 
-        dto.setNomeCompleto("");
+        dto.setNomeCompleto("Jose Maria");
         dto.setEmail("email-invalido");
 
         mockMvc.perform(post("/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Erro de validação"));
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     @Test
