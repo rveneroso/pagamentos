@@ -17,6 +17,23 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+  cloud:
+    # Desabilita verificação de compatibilidade do Spring Cloud com o Spring Boot
+    compatibility-verifier:
+      enabled: false
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 130000 # 130 segundos para cobrir os 2 minutos do mock
+
+clients:
+  authorization:
+    url: http://localhost:8080
+
+  email:
+    url: http://localhost:8080
 
 server:
   # Usa porta 8081 pois a porta 8080 é utilizada pelo mock
@@ -25,3 +42,19 @@ server:
 security:
   # Acesso aos endpoints será feito com validação do header x-api-key pois a aplicação não possui mecanismo de autenticação
   api-key: 123456
+
+#logging:
+#  level:
+#    root: INFO
+#    org.springframework.security: DEBUG
+#    org.springframework.web: DEBUG
+#    # Ajuda a identificar se o erro 500 vem do servidor de aplicação
+#    org.apache.catalina: DEBUG
+#    org.apache.coyote: DEBUG
+#    # Caso o erro seja no JPA/Hibernate (comum em erros 500 no POST)
+#    org.hibernate.SQL: DEBUG
+#    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+#
+#  # Opcional: Garante que os logs saiam bem formatados
+#  pattern:
+#    console: "%d{yyyy-MM-2d HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

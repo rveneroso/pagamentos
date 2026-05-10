@@ -96,4 +96,56 @@ class UsuarioServiceTest {
         assertFalse(result.isEmpty());
         verify(repository).findAll();
     }
+
+    @Test
+    void deveDefinirSaldoInicialParaPessoaFisica() {
+
+        when(repository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(repository.existsByNumeroDocumento(dto.getNumeroDocumento())).thenReturn(false);
+        when(passwordEncoder.encode(dto.getSenha())).thenReturn("senha-criptografada");
+
+        ArgumentCaptor<Usuario> usuarioCaptor =
+                ArgumentCaptor.forClass(Usuario.class);
+
+        Usuario usuarioSalvo = new Usuario();
+
+        when(repository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
+
+        service.salvar(dto);
+
+        verify(repository).save(usuarioCaptor.capture());
+
+        Usuario usuarioCapturado = usuarioCaptor.getValue();
+
+        assertEquals(0,
+                usuarioCapturado.getSaldo()
+                        .compareTo(new java.math.BigDecimal("200.00")));
+    }
+
+    @Test
+    void deveDefinirSaldoZeroParaPessoaJuridica() {
+
+        dto.setTipo(TipoUsuario.PJ);
+
+        when(repository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(repository.existsByNumeroDocumento(dto.getNumeroDocumento())).thenReturn(false);
+        when(passwordEncoder.encode(dto.getSenha())).thenReturn("senha-criptografada");
+
+        ArgumentCaptor<Usuario> usuarioCaptor =
+                ArgumentCaptor.forClass(Usuario.class);
+
+        Usuario usuarioSalvo = new Usuario();
+
+        when(repository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
+
+        service.salvar(dto);
+
+        verify(repository).save(usuarioCaptor.capture());
+
+        Usuario usuarioCapturado = usuarioCaptor.getValue();
+
+        assertEquals(0,
+                usuarioCapturado.getSaldo()
+                        .compareTo(java.math.BigDecimal.ZERO));
+    }
 }

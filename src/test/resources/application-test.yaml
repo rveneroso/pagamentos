@@ -1,0 +1,6 @@
+clients:
+  authorization:
+    url: http://localhost:8080
+
+  email:
+    url: http://localhost:8080

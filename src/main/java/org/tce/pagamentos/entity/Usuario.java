@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
-@Table(name = "users",
+@Table(name = "usuarios",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "email"),
                 @UniqueConstraint(columnNames = "numeroDocumento")
@@ -32,11 +34,13 @@ public class Usuario {
     private String email;
 
     @NotBlank
-    // Impede que o campo senha seja exibido em consultas ou no retorno das operações de banco de dados
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
 
     @Enumerated(EnumType.STRING)
     private TipoUsuario tipo;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private BigDecimal saldo;
 
 }
