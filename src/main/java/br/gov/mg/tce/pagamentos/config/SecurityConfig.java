@@ -36,8 +36,14 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Libera o acesso à console do H2 sem autenticação
-                        .requestMatchers("/h2-console/**").permitAll()
+                        // Libera o acesso à console do h2, Swagger e rotas de erro sem necessidade de autenticação
+                        .requestMatchers(
+                                "/h2-console/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/error"
+                        ).permitAll()
                         // Exige autenticação para quaisquer outras rotas
                         .anyRequest().authenticated()
                 )

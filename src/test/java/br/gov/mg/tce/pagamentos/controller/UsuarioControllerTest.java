@@ -62,7 +62,7 @@ class UsuarioControllerTest {
                         .header(API_KEY_HEADER, VALID_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk()) // Controller retorna o objeto direto (default 200 OK)
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.nomeCompleto").value("João Silva"))
                 .andExpect(jsonPath("$.numeroDocumento").value("39053344705"))

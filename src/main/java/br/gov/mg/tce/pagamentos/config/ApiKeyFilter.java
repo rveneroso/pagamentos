@@ -47,6 +47,9 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.contains("/h2-console") || path.equals("/error");
+        return path.contains("/h2-console")
+                || path.equals("/error")
+                || path.contains("/swagger-ui")
+                || path.contains("/v3/api-docs");
     }
 }
