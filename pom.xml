@@ -8,7 +8,7 @@
 		<version>3.5.14</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>org.tce</groupId>
+	<groupId>br.gov.mg.tce</groupId>
 	<artifactId>pagamentos</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>

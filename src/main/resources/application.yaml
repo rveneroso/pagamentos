@@ -22,7 +22,7 @@ spring:
       connection-timeout: 30000
       leak-detection-threshold: 2000
   cloud:
-    # Desabilita verificação de compatibilidade do Spring Cloud com o Spring Boot
+    # Desabilita verificação de compatibilidade do Spring Cloud com o Spring Boot. Essa verificação causa erros nos testes.
     compatibility-verifier:
       enabled: false
     openfeign:
@@ -52,6 +52,6 @@ security:
 
 logging:
   level:
-    org.tce.pagamentos: DEBUG
+    br.gov.mg.tce.pagamentos: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
