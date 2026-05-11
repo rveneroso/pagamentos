@@ -1,0 +1,10 @@
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('João Silva', '52998224725', 'joao.silva@email.com', '$2a$10$abcdefghijklmnopqrstuv', 'PF', 200.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Maria Oliveira', '11144477735', 'maria.oliveira@email.com', '$2a$10$abcdefghijklmnopqrstuv', 'PF', 200.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Carlos Pereira', '12345678909', 'carlos.pereira@email.com', '$2a$10$abcdefghijklmnopqrstuv', 'PF', 200.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Ana Souza', '98765432100', 'ana.souza@email.com', '$2a$10$abcdefghijklmnopqrstuv', 'PF', 200.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Fernanda Lima', '71460238001', 'fernanda.lima@email.com', '$2a$10$abcdefghijklmnopqrstuv', 'PF', 200.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Ricardo Alves', '39053344705', 'ricardo.alves@email.com', '$2a$10$abcdefghijklmnopqrstuv', 'PF', 200.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Mercado Central LTDA', '11222333000181', 'financeiro@mercadocentral.com', '$2a$10$abcdefghijklmnopqrstuv', 'PJ', 0.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Tech Solutions ME', '22333444000105', 'contato@techsolutions.com', '$2a$10$abcdefghijklmnopqrstuv', 'PJ', 0.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Padaria Pão Quente', '33444555000166', 'atendimento@paoquente.com', '$2a$10$abcdefghijklmnopqrstuv', 'PJ', 0.00);
+INSERT INTO usuarios (nome_completo, numero_documento, email, senha, tipo, saldo) VALUES ('Loja Universo Digital', '44555666000177', 'vendas@universodigital.com', '$2a$10$abcdefghijklmnopqrstuv', 'PJ', 0.00);
