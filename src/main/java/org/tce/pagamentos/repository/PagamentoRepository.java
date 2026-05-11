@@ -11,4 +11,5 @@ import java.util.List;
 public interface PagamentoRepository extends JpaRepository<Pagamento, Long> {
 
     List<Pagamento> findByStatus(StatusPagamento status);
+    List<Pagamento> findByStatusOrderByDataCriacaoAsc(StatusPagamento status);
 }

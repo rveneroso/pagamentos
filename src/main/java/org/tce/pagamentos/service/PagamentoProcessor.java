@@ -1,14 +1,14 @@
 package org.tce.pagamentos.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.tce.pagamentos.client.AuthorizationClient;
-import org.tce.pagamentos.entity.*;
+import org.tce.pagamentos.entity.EmailOutbox;
+import org.tce.pagamentos.entity.Pagamento;
+import org.tce.pagamentos.entity.Usuario;
 import org.tce.pagamentos.enums.StatusPagamento;
 import org.tce.pagamentos.repository.EmailOutboxRepository;
 import org.tce.pagamentos.repository.PagamentoRepository;
@@ -17,6 +17,7 @@ import org.tce.pagamentos.repository.UsuarioRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PagamentoProcessor {
@@ -33,19 +34,24 @@ public class PagamentoProcessor {
     }
 
     public void autorizar(Long pagamentoId) {
+        log.info("PagamentoProcessor.autorizar - Iniciando processamento do pagamento ID: {}",pagamentoId);
         Pagamento pagamento = pagamentoRepository.findById(pagamentoId)
                 .orElseThrow(() -> new RuntimeException("Pagamento não encontrado"));
 
-        if (pagamento.getStatus() != StatusPagamento.PENDENTE) return;
+        // Processa pagamentos tanto do fluxo inicial (PENDENTE) quanto da retentativa (ERRO_AUTORIZACAO)
+        if (pagamento.getStatus() != StatusPagamento.PENDENTE &&
+                pagamento.getStatus() != StatusPagamento.ERRO_AUTORIZACAO) {
+            return;
+        }
 
         try {
-            System.out.println(">>> Chamando autorizador (2 min mock): " + pagamentoId);
+            log.debug("PagamentoProcessor.autorizar - Chamando autorizador para o pagamento ID: {}", pagamentoId);
 
             boolean autorizado = authorizationClient.autorizar(
                     pagamento.getPagador().getNumeroDocumento()
             );
 
-            System.out.println(">>> Para o pagamento " + pagamentoId + " o serviço de autorização retornou " + autorizado);
+            log.debug("PagamentoProcessor.autorizar - Resposta do serviço de autorização para o pagamento ID: {} - {} ",pagamentoId, autorizado);
 
             if (!autorizado) {
                 transactionTemplate.execute(status -> {
@@ -68,6 +74,7 @@ public class PagamentoProcessor {
                 return null;
             });
         }
+        log.info("PagamentoProcessor.autorizar - Finalizando processamento do pagamento ID: {}",pagamentoId);
     }
 
     //@Transactional
@@ -75,7 +82,6 @@ public class PagamentoProcessor {
         Pagamento p = pagamentoRepository.findById(id).orElseThrow();
         p.setStatus(status);
         pagamentoRepository.save(p);
-        System.out.println(">>> Para o pagamento " + id + " o status agora é  " + status.name());
     }
 
     //@Transactional
@@ -90,7 +96,7 @@ public class PagamentoProcessor {
     //@Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public void executar(Long pagamentoId) {
 
-        System.out.println(">>> Iniciando a execução do pagamento " + pagamentoId);
+        log.info("PagamentoProcessor.executar - Iniciando processamento do pagamento ID: {}",pagamentoId);
 
         Pagamento pagamento = pagamentoRepository.findById(pagamentoId)
                 .orElseThrow(() -> new RuntimeException("Pagamento não encontrado"));
@@ -100,13 +106,13 @@ public class PagamentoProcessor {
             return;
         }
 
-        System.out.println(">>> Pagamento " + pagamentoId + " vai atualizar o status para PROCESSANDO");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} vai atualizar o status para PROCESSANDO", pagamentoId);
         pagamento.setStatus(StatusPagamento.PROCESSANDO);
         pagamentoRepository.saveAndFlush(pagamento);
-        System.out.println(">>> Pagamento " + pagamentoId + " atualizou o status para PROCESSANDO");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} atualizou o status para PROCESSANDO", pagamentoId);
 
         // Lê os registros dos usuários pagador e recebedor aplicando lock para garantir consistência na coluna saldo
-        System.out.println(">>> Pagamento " + pagamentoId + " vai obter os registros do pagador e do recebedor");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} vai obter os registros do pagador e do recebedor.", pagamentoId);
         Usuario pagador = usuarioRepository.findByIdForUpdate(
                 pagamento.getPagador().getId()
         ).orElseThrow(() -> new RuntimeException("Pagador não encontrado"));
@@ -114,44 +120,45 @@ public class PagamentoProcessor {
         Usuario recebedor = usuarioRepository.findByIdForUpdate(
                 pagamento.getRecebedor().getId()
         ).orElseThrow(() -> new RuntimeException("Recebedor não encontrado"));
-        System.out.println(">>> Pagamento " + pagamentoId + " obtever os registros do pagador e do recebedor");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} obteve os registros do pagador e do recebedor.", pagamentoId);
 
         BigDecimal valor = pagamento.getValor();
 
         // Certifica de que o saldo do usuário pagador é suficiente para realizar a transação
-        System.out.println(">>> Pagamento " + pagamentoId + " vai verificar se o saldo é suficiente");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} vai verificar se o saldo é suficiente para a transação.", pagamentoId);
         if (pagador.getSaldo().compareTo(valor) < 0) {
             pagamento.setStatus(StatusPagamento.CANCELADO);
             pagamento.setMensagemErro("Saldo insuficiente");
             pagamentoRepository.save(pagamento);
             return;
         }
-        System.out.println(">>> Pagamento " + pagamentoId + " verificou se o saldo é suficiente");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} verificou se o saldo é suficiente para a transação.", pagamentoId);
 
         // Atualiza os saldos do pagador e do recebedor e atualiza o status do pagamento
-        System.out.println(">>> Pagamento " + pagamentoId + " vai atualizar o saldo do pagador e do recebedor");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} vai atualizar o saldo do pagador e do recebedor.", pagamentoId);
         pagador.setSaldo(pagador.getSaldo().subtract(valor));
         recebedor.setSaldo(recebedor.getSaldo().add(valor));
         usuarioRepository.save(pagador);
         usuarioRepository.save(recebedor);
-        System.out.println(">>> Pagamento " + pagamentoId + " atualizou o saldo do pagador e do recebedor");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} atualizou o saldo do pagador e do recebedor.", pagamentoId);
 
-        System.out.println(">>> Pagamento " + pagamentoId + " vai atualizar o status para CONCLUIDO");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} vai atualizar o status para CONCLUIDO", pagamentoId);
         pagamento.setStatus(StatusPagamento.CONCLUIDO);
+        pagamento.setMensagemErro(null);
         pagamento.setDataProcessamento(LocalDateTime.now());
         pagamentoRepository.save(pagamento);
-        System.out.println(">>> Pagamento " + pagamentoId + " atualizou o status para CONCLUIDO");
+        log.debug("PagamentoProcessor.executar - Pagamento ID: {} atualizou o status para CONCLUIDO", pagamentoId);
 
-        System.out.println(">>> Realizou a execução do pagamento " + pagamentoId);
+        log.info("PagamentoProcessor.executar - Concluiu processamento do pagamento ID: {}",pagamentoId);
 
         // Salva informações a serem enviadas por email
+        log.info("PagamentoProcessor.executar - Vai salvar as informações de email do pagamento ID: {}",pagamentoId);
         EmailOutbox email = new EmailOutbox();
         email.setDestinatario(recebedor.getEmail());
         email.setMensagem("Pagamento recebido no valor de " + valor);
         email.setCriadoEm(LocalDateTime.now());
         emailOutboxRepository.save(email);
-
-        System.out.println(">>> Salvou informações de email do pagamento " + pagamentoId);
+        log.info("PagamentoProcessor.executar - Salvou as informações de email do pagamento ID: {}",pagamentoId);
 
     }
 }

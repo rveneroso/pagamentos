@@ -1,28 +1,50 @@
 package org.tce.pagamentos.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.tce.pagamentos.entity.Pagamento;
 import org.tce.pagamentos.enums.StatusPagamento;
 import org.tce.pagamentos.repository.PagamentoRepository;
 
 import java.util.List;
-@Service
+@Slf4j
+@Component
 @RequiredArgsConstructor
 public class AuthorizationRetryWorker {
 
     private final PagamentoRepository pagamentoRepository;
-    private final PagamentoWorker pagamentoWorker;
+    private final PagamentoProcessor pagamentoProcessor;
 
-    //@Scheduled(fixedDelay = 30000)
-    public void retryAutorizacao() {
+    // Executa 1 minuto após o fim da execução anterior
+    @Scheduled(fixedDelay = 60000)
+    public void processarPendentes() {
+        log.info("AuthorizationRetryWorker.processarPendentes -  Ciclo de retentativa iniciado.");
 
-        List<Pagamento> pagamentos =
-                pagamentoRepository.findByStatus(StatusPagamento.ERRO_AUTORIZACAO);
+        List<Pagamento> pagamentosParaRetry = pagamentoRepository.findByStatusOrderByDataCriacaoAsc(StatusPagamento.ERRO_AUTORIZACAO);
 
-        for (Pagamento pagamento : pagamentos) {
-            pagamentoWorker.processar(pagamento.getId());
+        if (pagamentosParaRetry.isEmpty()) {
+            return;
         }
+
+        log.info("AuthorizationRetryWorker.processarPendentes - Identificados {} pagamentos para retentativa.", pagamentosParaRetry.size());
+
+        for (Pagamento pagamento : pagamentosParaRetry) {
+            try {
+                log.info("AuthorizationRetryWorker.processarPendentes - Reprocessando pagamento ID: {}", pagamento.getId());
+
+                // Chama o método autorizar diretamente.
+                // Como ele usa TransactionTemplate internamente, cada iteração loop é uma transação nova.
+                pagamentoProcessor.autorizar(pagamento.getId());
+
+            } catch (Exception e) {
+                // Loga o erro mas não interrompe o loop para não travar os outros pagamentos
+                log.error("AuthorizationRetryWorker.processarPendentes - Erro inesperado ao processar pagamento ID: {} -  {}",pagamento.getId(), e.getMessage());
+            }
+        }
+
+        log.info("AuthorizationRetryWorker.processarPendentes -  Ciclo de retentativa finalizado.");
     }
 }

@@ -86,4 +86,38 @@ class PagamentoWorkerTest {
         assertEquals(StatusPagamento.ERRO_AUTORIZACAO, pagamento.getStatus());
         assertTrue(pagamento.getMensagemErro().contains("Falha na autorização"));
     }
+
+    @Test
+    void shouldThrowExceptionWhenPagamentoNotFound() {
+        Long pagamentoId = 99L;
+        when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.empty());
+
+        // Como o método usa .orElseThrow(), ele deve lançar NoSuchElementException (ou similar)
+        assertThrows(RuntimeException.class, () -> pagamentoWorker.processar(pagamentoId));
+
+        verifyNoInteractions(authorizationClient);
+        verifyNoInteractions(pagamentoProcessor);
+    }
+
+    @Test
+    void shouldClearErrorMessageOnSuccessfulReprocessing() {
+        Long pagamentoId = 1L;
+        Usuario pagador = new Usuario();
+        pagador.setNumeroDocumento("123");
+
+        Pagamento pagamento = new Pagamento();
+        pagamento.setId(pagamentoId);
+        pagamento.setPagador(pagador);
+        pagamento.setStatus(StatusPagamento.ERRO_AUTORIZACAO);
+        pagamento.setMensagemErro("Falha anterior"); // Simula um erro que já estava no banco
+
+        when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
+        when(authorizationClient.autorizar("123")).thenReturn(true);
+
+        pagamentoWorker.processar(pagamentoId);
+
+        assertEquals(StatusPagamento.AUTORIZADO, pagamento.getStatus());
+        assertNull(pagamento.getMensagemErro(), "A mensagem de erro deve ser limpa em caso de sucesso");
+        verify(pagamentoRepository).save(pagamento);
+    }
 }

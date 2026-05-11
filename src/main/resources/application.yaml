@@ -31,6 +31,9 @@ spring:
           default:
             connectTimeout: 5000
             readTimeout: 130000 # 130 segundos para cobrir os 2 minutos do mock
+  output:
+    ansi:
+      enabled: always
 
 clients:
   authorization:
@@ -47,18 +50,8 @@ security:
   # Acesso aos endpoints será feito com validação do header x-api-key pois a aplicação não possui mecanismo de autenticação
   api-key: 123456
 
-#logging:
-#  level:
-#    root: INFO
-#    org.springframework.security: DEBUG
-#    org.springframework.web: DEBUG
-#    # Ajuda a identificar se o erro 500 vem do servidor de aplicação
-#    org.apache.catalina: DEBUG
-#    org.apache.coyote: DEBUG
-#    # Caso o erro seja no JPA/Hibernate (comum em erros 500 no POST)
-#    org.hibernate.SQL: DEBUG
-#    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-#
-#  # Opcional: Garante que os logs saiam bem formatados
-#  pattern:
-#    console: "%d{yyyy-MM-2d HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+logging:
+  level:
+    org.tce.pagamentos: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
