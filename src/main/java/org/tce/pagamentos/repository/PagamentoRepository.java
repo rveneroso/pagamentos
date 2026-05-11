@@ -3,7 +3,7 @@ package org.tce.pagamentos.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.tce.pagamentos.entity.Pagamento;
-import org.tce.pagamentos.entity.StatusPagamento;
+import org.tce.pagamentos.enums.StatusPagamento;
 
 import java.util.List;
 

@@ -3,7 +3,7 @@ package org.tce.pagamentos.validation.validator;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
-import org.tce.pagamentos.entity.TipoUsuario;
+import org.tce.pagamentos.enums.TipoUsuario;
 import org.tce.pagamentos.validation.annotation.ValidaDocumentoPorTipo;
 
 public class DocumentoTipoValidator implements ConstraintValidator<ValidaDocumentoPorTipo, UsuarioRequestDTO> {

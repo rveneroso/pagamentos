@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.tce.pagamentos.enums.TipoUsuario;
 
 import java.math.BigDecimal;
 

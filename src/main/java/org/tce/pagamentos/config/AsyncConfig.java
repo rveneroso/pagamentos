@@ -15,9 +15,9 @@ public class AsyncConfig {
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(10);
-        executor.setQueueCapacity(100);
+        executor.setCorePoolSize(5); // Número de tarefas que podem executar simultâneamente
+        executor.setMaxPoolSize(10); // Número máximo de threads que podem ser criadas
+        executor.setQueueCapacity(100); // Define quantas tarefas podem ficar na fila antes de começar a rejeitar novos pedidos
         executor.initialize();
 
         return executor;

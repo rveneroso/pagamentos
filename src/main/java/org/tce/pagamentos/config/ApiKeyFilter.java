@@ -44,9 +44,15 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     }
 
     // Permite que a console de gerenciado do h2 e rotas de error funcionem sem o header x-api-key
+//    @Override
+//    protected boolean shouldNotFilter(HttpServletRequest request) {
+//        String path = request.getServletPath();
+//        return path.startsWith("/h2-console") || path.equals("/error");
+//    }
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path.startsWith("/h2-console") || path.equals("/error");
+        String path = request.getRequestURI(); // URI é mais abrangente que ServletPath em testes
+        return path.contains("/h2-console") || path.equals("/error");
     }
 }

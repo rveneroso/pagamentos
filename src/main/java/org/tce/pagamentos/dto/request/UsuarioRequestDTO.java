@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.tce.pagamentos.entity.TipoUsuario;
+import org.tce.pagamentos.enums.TipoUsuario;
 import org.tce.pagamentos.validation.annotation.SenhaForte;
 import org.tce.pagamentos.validation.annotation.ValidaDocumentoPorTipo;
 

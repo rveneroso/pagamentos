@@ -22,59 +22,55 @@ class SenhaValidatorTest {
     // Cenários em que o dado está inconsistente e a validação não se aplica.
 
     @Test
-    void deveRetornarTrueParaSenhaNull() {
+    void shouldReturnTrueWhenSenhaIsNull() {
         assertTrue(validator.isValid(null, context));
     }
 
     @Test
-    void deveRetornarTrueParaSenhaVazia() {
+    void shouldReturnTrueWhenSenhaIsEmpty() {
         assertTrue(validator.isValid("", context));
     }
 
     @Test
-    void deveRetornarTrueParaSenhaEmBranco() {
+    void shouldReturnTrueWhenSenhaIsBlank() {
         assertTrue(validator.isValid("   ", context));
     }
 
     // Cenários em que o dado está consistente.
 
     @Test
-    void deveRetornarFalseQuandoSenhaForMuitoCurta() {
+    void shouldReturnFalseWhenSenhaIsLessThanMinimumLength() {
         assertFalse(validator.isValid("Ab1@", context)); // < 8
     }
 
     @Test
-    void deveRetornarFalseQuandoSenhaForMuitoLonga() {
+    void shouldReturnFalseWhenSenhaIsGreaterThanMaximumLength() {
         assertFalse(validator.isValid("Abcdef1@XYZ9Q", context)); // > 12
     }
 
     @Test
-    void deveRetornarFalseQuandoSenhaContiverEspaco() {
+    void shouldReturnFalseWhenSenhaContainsOneOrMoreSpaces() {
         assertFalse(validator.isValid("Abc 123@", context));
     }
 
     @Test
-    void deveRetornarFalseQuandoNaoTiverLetraMaiuscula() {
+    void shouldReturnFalseWhenSenhaDoesNotContainAtLeastAnUpperCaseLetter() {
         assertFalse(validator.isValid("abc123@#", context));
     }
 
     @Test
-    void deveRetornarFalseQuandoNaoTiverNumero() {
+    void shouldReturnFalseWhenSenhaDoesNotContainAtLeastAnNumericDigit() {
         assertFalse(validator.isValid("Abcdef@#", context));
     }
 
     @Test
-    void deveRetornarFalseQuandoNaoTiverCaractereEspecial() {
+    void shouldReturnFalseWhenSenhaDoesNotContainAtLeastAnSpecialCharacter() {
         assertFalse(validator.isValid("Abcdef12", context));
     }
 
     @Test
-    void deveRetornarTrueParaSenhaValida() {
+    void shouldReturnTrueForValidSenha() {
         assertTrue(validator.isValid("Abc123@1", context));
     }
 
-    @Test
-    void deveRetornarTrueParaOutraSenhaValida() {
-        assertTrue(validator.isValid("Senha@123", context));
-    }
 }

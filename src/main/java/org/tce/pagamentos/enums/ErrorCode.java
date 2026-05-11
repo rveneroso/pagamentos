@@ -1,4 +1,4 @@
-package org.tce.pagamentos.exception;
+package org.tce.pagamentos.enums;
 
 public enum ErrorCode {
     VALIDATION_ERROR,

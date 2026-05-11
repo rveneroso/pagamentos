@@ -1,19 +1,22 @@
 package org.tce.pagamentos.service;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
-import org.tce.pagamentos.entity.TipoUsuario;
 import org.tce.pagamentos.entity.Usuario;
+import org.tce.pagamentos.enums.TipoUsuario;
+import org.tce.pagamentos.exception.BusinessException;
 import org.tce.pagamentos.repository.UsuarioRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,124 +31,75 @@ class UsuarioServiceTest {
     @InjectMocks
     private UsuarioService service;
 
-    private UsuarioRequestDTO dto;
-
-    @BeforeEach
-    void setUp() {
-        dto = new UsuarioRequestDTO();
-        dto.setNomeCompleto("João Silva");
-        dto.setEmail("joao@email.com");
-        dto.setNumeroDocumento("52998224725");
-        dto.setSenha("Abc123@1");
-        dto.setTipo(TipoUsuario.PF);
-    }
-
     @Test
-    void deveSalvarUsuarioComSucesso() {
+    void shouldSaveUsuarioPFUWithSuccess() {
+        UsuarioRequestDTO dto = createDto(TipoUsuario.PF);
+        when(repository.existsByEmail(anyString())).thenReturn(false);
+        when(repository.existsByNumeroDocumento(anyString())).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
 
-        when(repository.existsByEmail(dto.getEmail())).thenReturn(false);
-        when(repository.existsByNumeroDocumento(dto.getNumeroDocumento())).thenReturn(false);
-        when(passwordEncoder.encode(dto.getSenha())).thenReturn("senha-criptografada");
-
-        Usuario usuarioSalvo = new Usuario();
-        usuarioSalvo.setEmail(dto.getEmail());
-
-        when(repository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
+        when(repository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Usuario result = service.salvar(dto);
 
         assertNotNull(result);
-        verify(repository).save(any(Usuario.class));
-        verify(passwordEncoder).encode(dto.getSenha());
+        assertEquals(new BigDecimal("200.00"), result.getSaldo());
+        assertEquals("encoded_password", result.getSenha());
+        verify(repository, times(1)).save(any(Usuario.class));
     }
 
     @Test
-    void deveLancarExcecaoQuandoEmailJaExiste() {
+    void shouldSaveUsuarioPJWithSuccess() {
+        UsuarioRequestDTO dto = createDto(TipoUsuario.PJ);
+        when(repository.existsByEmail(anyString())).thenReturn(false);
+        when(repository.existsByNumeroDocumento(anyString())).thenReturn(false);
+        when(repository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        Usuario result = service.salvar(dto);
+
+        assertEquals(BigDecimal.ZERO, result.getSaldo());
+        verify(repository).save(any(Usuario.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenEmailExists() {
+        UsuarioRequestDTO dto = createDto(TipoUsuario.PF);
         when(repository.existsByEmail(dto.getEmail())).thenReturn(true);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.salvar(dto));
-
-        assertEquals("Email já cadastrado", ex.getMessage());
-
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.salvar(dto));
+        assertEquals("Email já cadastrado", exception.getMessage());
         verify(repository, never()).save(any());
     }
 
     @Test
-    void deveLancarExcecaoQuandoDocumentoJaExiste() {
-
+    void shouldThrowExceptionWhenDocumentExists() {
+        UsuarioRequestDTO dto = createDto(TipoUsuario.PF);
         when(repository.existsByEmail(dto.getEmail())).thenReturn(false);
         when(repository.existsByNumeroDocumento(dto.getNumeroDocumento())).thenReturn(true);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.salvar(dto));
-
-        assertEquals("Número de documento já cadastrado", ex.getMessage());
-
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.salvar(dto));
+        assertEquals("Número de documento já cadastrado", exception.getMessage());
         verify(repository, never()).save(any());
     }
 
     @Test
-    void deveListarUsuarios() {
-
-        when(repository.findAll()).thenReturn(List.of(new Usuario()));
+    void shouldListAllUsuarios() {
+        when(repository.findAll()).thenReturn(List.of(new Usuario(), new Usuario()));
 
         List<Usuario> result = service.listarTodos();
 
-        assertFalse(result.isEmpty());
-        verify(repository).findAll();
+        assertEquals(2, result.size());
+        verify(repository, times(1)).findAll();
     }
 
-    @Test
-    void deveDefinirSaldoInicialParaPessoaFisica() {
-
-        when(repository.existsByEmail(dto.getEmail())).thenReturn(false);
-        when(repository.existsByNumeroDocumento(dto.getNumeroDocumento())).thenReturn(false);
-        when(passwordEncoder.encode(dto.getSenha())).thenReturn("senha-criptografada");
-
-        ArgumentCaptor<Usuario> usuarioCaptor =
-                ArgumentCaptor.forClass(Usuario.class);
-
-        Usuario usuarioSalvo = new Usuario();
-
-        when(repository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
-
-        service.salvar(dto);
-
-        verify(repository).save(usuarioCaptor.capture());
-
-        Usuario usuarioCapturado = usuarioCaptor.getValue();
-
-        assertEquals(0,
-                usuarioCapturado.getSaldo()
-                        .compareTo(new java.math.BigDecimal("200.00")));
-    }
-
-    @Test
-    void deveDefinirSaldoZeroParaPessoaJuridica() {
-
-        dto.setTipo(TipoUsuario.PJ);
-
-        when(repository.existsByEmail(dto.getEmail())).thenReturn(false);
-        when(repository.existsByNumeroDocumento(dto.getNumeroDocumento())).thenReturn(false);
-        when(passwordEncoder.encode(dto.getSenha())).thenReturn("senha-criptografada");
-
-        ArgumentCaptor<Usuario> usuarioCaptor =
-                ArgumentCaptor.forClass(Usuario.class);
-
-        Usuario usuarioSalvo = new Usuario();
-
-        when(repository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
-
-        service.salvar(dto);
-
-        verify(repository).save(usuarioCaptor.capture());
-
-        Usuario usuarioCapturado = usuarioCaptor.getValue();
-
-        assertEquals(0,
-                usuarioCapturado.getSaldo()
-                        .compareTo(java.math.BigDecimal.ZERO));
+    // Helper para a criação de DTO
+    private UsuarioRequestDTO createDto(TipoUsuario tipo) {
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
+        dto.setNomeCompleto("Test User");
+        dto.setEmail("test@tce.org");
+        dto.setNumeroDocumento("123456789");
+        dto.setSenha("password123");
+        dto.setTipo(tipo);
+        return dto;
     }
 }

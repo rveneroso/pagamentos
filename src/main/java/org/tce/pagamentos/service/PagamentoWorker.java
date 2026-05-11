@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.tce.pagamentos.client.AuthorizationClient;
-import org.tce.pagamentos.entity.StatusPagamento;
+import org.tce.pagamentos.enums.StatusPagamento;
 import org.tce.pagamentos.repository.PagamentoRepository;
 import org.tce.pagamentos.entity.Pagamento;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +15,7 @@ public class PagamentoWorker {
 
     private final AuthorizationClient authorizationClient;
     private final PagamentoRepository pagamentoRepository;
-    private final PaymentProcessor paymentProcessor;
+    private final PagamentoProcessor pagamentoProcessor;
 
     @Async("taskExecutor")
     @Transactional
@@ -42,7 +42,7 @@ public class PagamentoWorker {
             pagamento.setStatus(StatusPagamento.AUTORIZADO);
             pagamentoRepository.save(pagamento);
 
-            paymentProcessor.executar(pagamento.getId());
+            pagamentoProcessor.executar(pagamento.getId());
 
         } catch (Exception ex) {
             pagamento.setStatus(StatusPagamento.ERRO_AUTORIZACAO);

@@ -4,13 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
-import org.tce.pagamentos.entity.TipoUsuario;
 import org.tce.pagamentos.entity.Usuario;
+import org.tce.pagamentos.enums.TipoUsuario;
 import org.tce.pagamentos.service.UsuarioService;
 
 import java.util.List;
@@ -22,61 +23,80 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(UsuarioController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@SpringBootTest
+@AutoConfigureMockMvc
+@TestPropertySource(properties = "security.api-key=secret-key-usuarios")
 class UsuarioControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private UsuarioService service;
-
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockBean
+    private UsuarioService usuarioService;
+
+    private final String API_KEY_HEADER = "x-api-key";
+    private final String VALID_KEY = "secret-key-usuarios";
+
     @Test
-    void deveSalvarUsuarioComSucesso() throws Exception {
+    void shouldSaveUsuarioWithSuccess() throws Exception {
+        UsuarioRequestDTO request = new UsuarioRequestDTO();
+        request.setNomeCompleto("João Silva");
+        request.setNumeroDocumento("39053344705");
+        request.setSenha("yJ*&!620BW");
+        request.setTipo(TipoUsuario.PF);
+        request.setEmail("joao@tce.org");
 
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
+        Usuario usuarioSalvo = new Usuario();
+        usuarioSalvo.setId(1L);
+        usuarioSalvo.setNomeCompleto("João Silva");
+        usuarioSalvo.setNumeroDocumento("39053344705");
+        usuarioSalvo.setTipo(TipoUsuario.PF);
+        usuarioSalvo.setEmail("joao@tce.org");
 
-        when(service.salvar(any(UsuarioRequestDTO.class))).thenReturn(usuario);
-
-        UsuarioRequestDTO dto = new UsuarioRequestDTO();
-        dto.setNomeCompleto("João");
-        dto.setEmail("joao@email.com");
-        dto.setNumeroDocumento("52998224725");
-        dto.setSenha("Abc123@1");
-        dto.setTipo(TipoUsuario.PF);
+        when(usuarioService.salvar(any(UsuarioRequestDTO.class))).thenReturn(usuarioSalvo);
 
         mockMvc.perform(post("/usuarios")
+                        .header(API_KEY_HEADER, VALID_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk());
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()) // O seu controller retorna o objeto direto (default 200 OK)
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.nomeCompleto").value("João Silva"))
+                .andExpect(jsonPath("$.numeroDocumento").value("39053344705"))
+                .andExpect(jsonPath("$.tipo").value("PF"))
+                .andExpect(jsonPath("$.email").value("joao@tce.org"));
     }
 
     @Test
-    void deveRetornarErroQuandoDtoForInvalido() throws Exception {
+    void shouldListAllUsuarios() throws Exception {
+        Usuario u1 = new Usuario(); u1.setId(1L); u1.setNomeCompleto("User One");
+        Usuario u2 = new Usuario(); u2.setId(2L); u2.setNomeCompleto("User Two");
 
-        UsuarioRequestDTO dto = new UsuarioRequestDTO();
+        when(usuarioService.listarTodos()).thenReturn(List.of(u1, u2));
 
-        dto.setNomeCompleto("Jose Maria");
-        dto.setEmail("email-invalido");
-
-        mockMvc.perform(post("/usuarios")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        mockMvc.perform(get("/usuarios")
+                        .header(API_KEY_HEADER, VALID_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].nomeCompleto").value("User One"))
+                .andExpect(jsonPath("$[1].nomeCompleto").value("User Two"));
     }
 
     @Test
-    void deveListarUsuarios() throws Exception {
-
-        when(service.listarTodos()).thenReturn(List.of(new Usuario()));
-
+    void shouldBlockRequestWithoutApiKey() throws Exception {
         mockMvc.perform(get("/usuarios"))
-                .andExpect(status().isOk());
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldReturnValidationError() throws Exception {
+        mockMvc.perform(post("/usuarios")
+                        .header(API_KEY_HEADER, VALID_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
     }
 }

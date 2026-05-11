@@ -3,7 +3,7 @@ package org.tce.pagamentos.mapper;
 import org.junit.jupiter.api.Test;
 import org.tce.pagamentos.dto.request.UsuarioRequestDTO;
 import org.tce.pagamentos.dto.response.UsuarioResponseDTO;
-import org.tce.pagamentos.entity.TipoUsuario;
+import org.tce.pagamentos.enums.TipoUsuario;
 import org.tce.pagamentos.entity.Usuario;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UsuarioMapperTest {
 
     @Test
-    void deveConverterUsuarioRequestDTOParaUsuario() {
+    void shouldConvertUsuarioRequestDTOToUsuario() {
 
         UsuarioRequestDTO dto = new UsuarioRequestDTO();
         dto.setNomeCompleto("João Silva");
@@ -31,7 +31,7 @@ class UsuarioMapperTest {
     }
 
     @Test
-    void deveConverterUsuarioParaUsuarioResponseDTO() {
+    void shouldConvertUsuarioToUsuarioResponseDTO() {
 
         Usuario usuario = new Usuario();
         usuario.setId(1L);
@@ -52,7 +52,7 @@ class UsuarioMapperTest {
     }
 
     @Test
-    void naoDeveRetornarSenhaNoUsuarioResponseDTO() {
+    void shouldNotReturnPasswordInUsuarioResponseDTO() {
 
         Usuario usuario = new Usuario();
         usuario.setId(1L);

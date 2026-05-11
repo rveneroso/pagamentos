@@ -6,9 +6,12 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.tce.pagamentos.enums.ErrorCode;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -42,6 +45,32 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now()
                 )
         );
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex) {
+
+        String mensagem = "Valor inválido para o parâmetro '" +
+                ex.getName() + "'";
+
+        if (ex.getRequiredType() != null &&
+                ex.getRequiredType().isEnum()) {
+
+            Object[] valores =
+                    ex.getRequiredType().getEnumConstants();
+
+            mensagem += ". Valores permitidos: " +
+                    Arrays.toString(valores);
+        }
+
+        ErrorResponse error = new ErrorResponse(
+                "INVALID_PARAMETER",
+                mensagem,
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(BusinessException.class)

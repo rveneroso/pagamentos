@@ -1,4 +1,4 @@
-package org.tce.pagamentos.entity;
+package org.tce.pagamentos.enums;
 
 public enum TipoUsuario {
     PF, // Pessoa Física

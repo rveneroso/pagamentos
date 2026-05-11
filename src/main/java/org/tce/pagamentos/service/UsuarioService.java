@@ -3,7 +3,7 @@ package org.tce.pagamentos.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.tce.pagamentos.entity.TipoUsuario;
+import org.tce.pagamentos.enums.TipoUsuario;
 import org.tce.pagamentos.exception.BusinessException;
 import org.tce.pagamentos.mapper.UsuarioMapper;
 import org.tce.pagamentos.repository.UsuarioRepository;

@@ -2,6 +2,7 @@ package org.tce.pagamentos.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.tce.pagamentos.enums.StatusPagamento;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

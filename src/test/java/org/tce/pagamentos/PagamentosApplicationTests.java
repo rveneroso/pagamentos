@@ -10,6 +10,8 @@ class PagamentosApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// Este teste verifica se o ApplicationContext do Spring
+		// consegue carregar sem erros catastróficos.
 	}
 
 }

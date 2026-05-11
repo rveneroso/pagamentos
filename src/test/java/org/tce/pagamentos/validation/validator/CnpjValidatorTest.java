@@ -7,35 +7,35 @@ import static org.junit.jupiter.api.Assertions.*;
 class CnpjValidatorTest {
 
     @Test
-    void deveRetornarFalseParaNull() {
+    void shouldReturnFalseWhenNull() {
         assertFalse(CnpjValidator.isValid(null));
     }
 
     @Test
-    void deveRetornarFalseParaFormatoInvalido() {
+    void shouldReturnFalseWhenInvalidFormat() {
         assertFalse(CnpjValidator.isValid("123"));
         assertFalse(CnpjValidator.isValid("abc"));
         assertFalse(CnpjValidator.isValid("1234567890123a"));
     }
 
     @Test
-    void deveRetornarFalseParaCnpjComTodosDigitosIguais() {
+    void shouldReturnFalseForCnpjWithAllDigitsTheSame() {
         assertFalse(CnpjValidator.isValid("11111111111111"));
         assertFalse(CnpjValidator.isValid("00000000000000"));
     }
 
     @Test
-    void deveRetornarFalseParaCnpjInvalido() {
+    void shouldReturnFalseForInvalidCnpj() {
         assertFalse(CnpjValidator.isValid("12345678000100"));
     }
 
     @Test
-    void deveRetornarTrueParaCnpjValido() {
+    void shouldReturnTrueForValidCnpj() {
         assertTrue(CnpjValidator.isValid("11444777000161"));
     }
 
     @Test
-    void deveIgnorarCnpjComCaracteresNaoNumericos() {
+    void shouldIgnoreCnpjWithNonNumericCharacters() {
         assertFalse(CnpjValidator.isValid("11.444.777/0001-61"));
     }
 }
