@@ -1,53 +1,55 @@
 # 💳 Sistema de Pagamentos
 
-Esta API REST foi desenvolvida para gerenciar fluxos de transferências financeiras entre usuários, com foco em segurança, extensibilidade e documentação rigorosa. O projeto demonstra a aplicação de padrões modernos de desenvolvimento em um ambiente de missão crítica.
+Esta API REST foi desenvolvida para gerenciar fluxos de transferências financeiras entre usuários, com foco em **alta disponibilidade**, **resiliência** e **integridade transacional**. O projeto demonstra a aplicação de padrões avançados de arquitetura para ambientes de missão crítica.
 
 ## 🛠 Stack Tecnológica
-*   **Java 17**: Escolhido para garantir total compatibilidade com o ecossistema de mocks e serviços de autorização externos.
-*   **Spring Boot 3.2.5**: Utilização da versão mais estável do framework para suporte nativo a Jakarta EE.
-*   **Spring Data JPA**: Abstração de persistência com **H2 Database** (em memória) para facilitar a execução imediata.
-*   **Spring Security**: Implementação de segurança Stateless via **API Key**.
-*   **SpringDoc OpenAPI (Swagger)**: Documentação viva e interativa da API.
-*   **Lombok & Bean Validation**: Redução de boilerplate e garantia de integridade dos dados.
+* **Java 17**: Utilizado para garantir compatibilidade com as funcionalidades modernas de records e selagem de classes.
+* **Spring Boot 3.2.5**: Base da aplicação, com suporte nativo a Jakarta EE.
+* **Spring Data JPA**: Abstração de persistência com **H2 Database** para execução imediata e facilitada.
+* **Spring Security**: Implementação de segurança Stateless via **API Key** customizada.
+* **SpringDoc OpenAPI (Swagger)**: Documentação viva e interativa da API.
+* **Lombok & Bean Validation**: Garantia de integridade dos dados com redução drástica de boilerplate.
 
-## 🏗 Diferenciais de Arquitetura
-*   **Desacoplamento com DTOs**: Implementação do Pattern DTO para garantir que os dados sejam íntegros e independentes das entidades de banco de dados durante todo o ciclo de vida da requisição, evitando a exposição de dados sensíveis e protegendo o contrato da API.
-*   **Filtro de Segurança Customizado**: Implementação de um `ApiKeyFilter` que intercepta requisições e valida o acesso antes mesmo de atingir a camada de Controller.
-*   **Design RESTful Puro**: Endpoints estruturados sobre substantivos, utilizando verbos HTTP para definir ações.
-*   **Resiliência no Processamento**: Estrutura preparada para lidar com falhas temporárias de autorização através de status de erro controlados.
+## 🏗 Diferenciais de Arquitetura e Resiliência
+* **Transactional Outbox Pattern**: Implementação de mensageria confiável. As notificações de pagamento são persistidas na mesma transação da regra de negócio, garantindo consistência eventual mesmo se o serviço de e-mail estiver offline no momento do pagamento.
+* **Modelo de Domínio Rico**: As regras de negócio, cálculos de saldo e transições de estado estão encapsuladas diretamente nas entidades (`Usuario`, `Pagamento`), seguindo princípios de Clean Code e facilitando testes unitários puramente Java.
+* **Processamento Assíncrono e Retentativas**: Utilização de workers agendados (`EmailOutboxProcessor` e `AuthorizationRelayWorker`) para gerenciar falhas temporárias em serviços externos (Autorização e Notificação), evitando que o usuário final sofra com instabilidades de terceiros.
+* **Desacoplamento com DTOs**: Proteção total do contrato da API e das entidades de banco de dados, evitando a exposição de dados sensíveis e garantindo independência evolutiva.
+
+## 🧪 Estratégia de Testes
+O projeto possui uma cobertura rigorosa baseada na pirâmide de testes:
+* **Testes de Unidade (JUnit 5)**: Validação das invariantes de negócio e cálculos matemáticos nas entidades, rodando de forma instantânea sem dependência de framework.
+* **Testes de Integração de API (MockMvc)**: Validação de segurança, serialização JSON, filtros de API Key e contratos de Controller.
+* **Testes de Orquestração (Mockito)**: Simulação de falhas de rede, negações e timeouts para validar a resiliência dos workers e services sob estresse.
 
 ## 🔑 Segurança e Acesso
-A API utiliza autenticação por chave de acesso. Para realizar testes:
-*   **Header**: `x-api-key`
-*   **Valor**: `chave-secreta-configurada` *(Verifique o valor real em seu application.yaml)*
+A API utiliza autenticação por chave de acesso via Header customizado:
+* **Header**: `x-api-key`
+* **Valor Padrão**: `secret-key-123` *(Configurável via application-test.properties ou variáveis de ambiente)*
 
 ## 📖 Como Executar
 1.  **Build**: Execute `./mvnw clean install` ou `mvn clean install`.
 2.  **Run**: Execute `./mvnw spring-boot:run`.
-3.  **Swagger UI**: Acesse a interface interativa em: `http://localhost:8081/swagger-ui/index.html`
+3.  **Swagger UI**: Acesse: `http://localhost:8081/swagger-ui/index.html`
 
-## 🧪 Instruções de Teste
-Para validar as regras de negócio e a integração com serviços externos, utilize o roteiro abaixo no Swagger UI:
+## 🕹 Roteiro de Teste (Cenários de Negócio)
+Utilize o Swagger UI para validar o comportamento do sistema:
 
-1.  **Autorização**: Clique no botão **Authorize** e insira a `x-api-key`. Sem este passo, as requisições retornarão `401 Unauthorized`.
-2.  **Massa de Dados Automática**: O banco de dados H2 é populado na inicialização via `import.sql`. Utilize os seguintes registros:
-    *   **Usuário Comum (Pagador)**: `ID 1` (João Silva) - Saldo: R$ 200,00.
-    *   **Lojista (Recebedor)**: `ID 7` (Mercado Central LTDA) - Saldo inicial: R$ 0,00.
-3.  **Cenários de Validação**:
-    *   **Sucesso e Autorização**: Realize um `POST /pagamentos` com dados válidos. A operação depende da resposta do serviço externo de autorização; caso o mock retorne "Não Autorizado", a transação será revertida para garantir a consistência.
-    *   **Regra de Saldo**: Tente um pagamento com valor superior ao saldo do `ID 1`. A API retornará `409 Conflict`.
-    *   **Restrição de Lojista**: Tente realizar um pagamento partindo do `ID 7`. O sistema impedirá a transação (Lojistas apenas recebem).
-    *   **Validação de Documento**: O campo `numeroDocumento` aceita 11 dígitos (PF) ou 14 dígitos (PJ).
+1.  **Massa de Dados**: O sistema inicia com o `ID 1` (João Silva - PF) com R$ 200,00 e o `ID 7` (Mercado Central - PJ) com saldo zero.
+2.  **Fluxo de Sucesso**: Realize um pagamento de PF para PJ. O sistema debitará o pagador, creditará o recebedor e agendará uma notificação no Outbox.
+3.  **Resiliência de Autorização**: Se o serviço externo de autorização falhar (timeout/erro 500), o pagamento ficará com status `ERRO_AUTORIZACAO`. O `AuthorizationRelayWorker` tentará reprocessá-lo automaticamente.
+4.  **Validações Financeiras**:
+    * **Saldo Insuficiente**: Retorna `409 Conflict`.
+    * **Restrição Lojista**: Lojistas (PJ) são impedidos de iniciar pagamentos, agindo apenas como recebedores.
+    * **Auto-pagamento**: O sistema impede transferências para o mesmo CPF/CNPJ.
 
 ---
 
-## 🚀 Evoluções Futuras & Escalabilidade
-Para suportar cenários de alta volumetria, o projeto foi desenhado prevendo as seguintes evoluções:
-1.  **Mensageria e Assincronismo**: Migração para um modelo baseado em eventos com **RabbitMQ** ou **Kafka**.
-2.  **Estratégia de Sharding**: Implementação de Sharding por ID de usuário para paralelismo de processamento.
-3.  **Observabilidade**: Exportação de métricas para **Prometheus** e **Grafana** via **Micrometer Tracing**.
+## 🚀 Evoluções Futuras
+1.  **Mensageria Distribuída**: Substituição do Outbox baseado em DB por **RabbitMQ** ou **Kafka** para suportar escalabilidade horizontal massiva.
+2.  **Observabilidade**: Integração com **Prometheus** e **Grafana** via Micrometer para monitoramento em tempo real de throughput e taxas de erro.
+3.  **Containers**: Dockerização da aplicação e criação de manifestos Helm para orquestração em clusters Kubernetes.
 
 ---
-
 ### Notas de Implementação
-O projeto foi estruturado com foco em clareza e manutenibilidade, aplicando padrões de projeto que visam a colaboração em equipe e a evolução sustentável do software. A escolha das tecnologias e a organização das camadas buscam alinhar o desenvolvimento às boas práticas do ecossistema Java corporativo.
+Este projeto foi estruturado para suportar o crescimento da volumetria sem comprometer a confiabilidade dos dados, aplicando padrões de design que visam a manutenibilidade e a evolução sustentável em um ecossistema corporativo de alta criticidade.
