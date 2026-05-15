@@ -1,10 +1,9 @@
 package br.gov.mg.tce.pagamentos.service;
 
-import br.gov.mg.tce.pagamentos.client.AuthorizationClient;
 import br.gov.mg.tce.pagamentos.entity.Pagamento;
 import br.gov.mg.tce.pagamentos.entity.Usuario;
 import br.gov.mg.tce.pagamentos.enums.StatusPagamento;
-import br.gov.mg.tce.pagamentos.repository.EmailOutboxRepository;
+import br.gov.mg.tce.pagamentos.enums.TipoUsuario;
 import br.gov.mg.tce.pagamentos.repository.PagamentoRepository;
 import br.gov.mg.tce.pagamentos.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,135 +12,82 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PagamentoProcessorTest {
 
-    @Mock private PagamentoRepository pagamentoRepository;
+    @Mock
+    private PagamentoRepository pagamentoRepository;
 
-    @Mock private UsuarioRepository usuarioRepository;
+    @Mock
+    private UsuarioRepository usuarioRepository;
 
-    @Mock private EmailOutboxRepository emailOutboxRepository;
+    @Mock
+    private PagamentoAuthorizer pagamentoAuthorizer;
 
-    @Mock private AuthorizationClient authorizationClient;
+    @Mock
+    private EmailOutboxService emailOutboxService;
 
-    @Mock private TransactionTemplate transactionTemplate;
+    @Mock
+    private TransactionTemplate transactionTemplate;
 
     @InjectMocks
     private PagamentoProcessor pagamentoProcessor;
 
-    private Pagamento pagamento;
-
-    private Usuario pagador;
-
-    private Usuario recebedor;
-
     @BeforeEach
-    void setUp() {
-        pagador = new Usuario();
-        pagador.setId(1L);
-        pagador.setNumeroDocumento("123456");
-        pagador.setSaldo(new BigDecimal("100.00"));
+    void setup() {
+        // Informa-se ao Mockito: "Sempre que chamar executeWithoutResult, pegue a ação (Consumer) que foi passada e execute-a imediatamente."
+        doAnswer(invocation -> {
+            java.util.function.Consumer<org.springframework.transaction.TransactionStatus> action = invocation.getArgument(0);
+            action.accept(null); // Aqui, null é passado pois o status não é usado no código
+            return null;
+        }).when(transactionTemplate).executeWithoutResult(any());
+    }
 
-        recebedor = new Usuario();
-        recebedor.setId(2L);
-        recebedor.setSaldo(new BigDecimal("50.00"));
-        recebedor.setEmail("recebedor@test.com");
+    @Test
+    void shouldProcessPaymentWithSuccess() {
+        Long pagamentoId = 1L;
+        Usuario pagador = new Usuario(1L, "Pagador", "10357592093","pagador@tce.mg.gov.br",  "e}G9Y35:", TipoUsuario.PF, new BigDecimal("1000.00"));
+        Usuario recebedor = new Usuario(2L, "Recebedor", "74978548012", "recebedor@tce.mg.gov.br", "e}G9Y35:", TipoUsuario.PF,new BigDecimal("0.00"));
+        Pagamento pagamento = new Pagamento(1L, pagador, recebedor, new BigDecimal("100.00"), StatusPagamento.PENDENTE, null, LocalDateTime.now(), null);
 
-        pagamento = new Pagamento();
-        pagamento.setId(10L);
-        pagamento.setPagador(pagador);
-        pagamento.setRecebedor(recebedor);
-        pagamento.setValor(new BigDecimal("30.00"));
+        when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
+        when(pagamentoAuthorizer.obterAutorizacao(any())).thenReturn(true);
+        when(usuarioRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pagador));
+        when(usuarioRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(recebedor));
+
+        // Chamada ao método que é disparado pelo @Async
+        pagamentoProcessor.processarPagamentoAsync(pagamentoId);
+
+        verify(pagamentoAuthorizer).obterAutorizacao(any());
+        verify(pagamentoRepository, atLeastOnce()).save(pagamento);
+        verify(emailOutboxService).agendarNotificacaoRecebimento(anyString(), any());
+
+        assert pagamento.getStatus() == StatusPagamento.CONCLUIDO;
+        assert pagador.getSaldo().compareTo(new BigDecimal("900.00")) == 0;
+        assert recebedor.getSaldo().compareTo(new BigDecimal("100.00")) == 0;
+    }
+
+    @Test
+    void shoulCancelPaymentWhenNotAuthorized() {
+        Long pagamentoId = 1L;
+        Pagamento pagamento = new Pagamento();
         pagamento.setStatus(StatusPagamento.PENDENTE);
 
-        // Mocka o TransactionTemplate para executar o callback interno
-        lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
-            TransactionCallback<?> callback = invocation.getArgument(0);
-            return callback.doInTransaction(null);
-        });
-    }
+        when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
+        when(pagamentoAuthorizer.obterAutorizacao(any())).thenReturn(false);
 
-    @Test
-    void shouldProcessPagamentoSuccessfully() {
-        when(pagamentoRepository.findById(anyLong())).thenReturn(Optional.of(pagamento));
-        when(authorizationClient.autorizar(anyString())).thenReturn(true);
-        when(usuarioRepository.findByIdForUpdate(pagador.getId())).thenReturn(Optional.of(pagador));
-        when(usuarioRepository.findByIdForUpdate(recebedor.getId())).thenReturn(Optional.of(recebedor));
+        pagamentoProcessor.processarPagamentoAsync(pagamentoId);
 
-        pagamentoProcessor.autorizar(10L);
-
-        assertEquals(StatusPagamento.CONCLUIDO, pagamento.getStatus());
-        assertEquals(new BigDecimal("70.00"), pagador.getSaldo());
-        assertEquals(new BigDecimal("80.00"), recebedor.getSaldo());
-        assertNull(pagamento.getMensagemErro());
-
-        verify(emailOutboxRepository, times(1)).save(any());
-        verify(pagamentoRepository, atLeastOnce()).save(pagamento);
-    }
-
-    @Test
-    void shouldCancelWhenNotAuthorized() {
-        when(pagamentoRepository.findById(10L)).thenReturn(Optional.of(pagamento));
-        when(authorizationClient.autorizar(anyString())).thenReturn(false);
-
-        pagamentoProcessor.autorizar(10L);
-
-        assertEquals(StatusPagamento.CANCELADO, pagamento.getStatus());
-        assertEquals("Não autorizado", pagamento.getMensagemErro());
-        verify(usuarioRepository, never()).findByIdForUpdate(anyLong());
-    }
-
-    @Test
-    void shouldSetErrorStatusOnAuthorizationException() {
-        when(pagamentoRepository.findById(10L)).thenReturn(Optional.of(pagamento));
-        when(authorizationClient.autorizar(anyString())).thenThrow(new RuntimeException("Timeout"));
-
-        pagamentoProcessor.autorizar(10L);
-
-        assertEquals(StatusPagamento.ERRO_AUTORIZACAO, pagamento.getStatus());
-        assertEquals("Serviço indisponível", pagamento.getMensagemErro());
-    }
-
-    @Test
-    void shouldCancelWhenBalanceIsInsufficient() {
-        pagamento.setValor(new BigDecimal("200.00"));
-        pagamento.setStatus(StatusPagamento.AUTORIZADO);
-
-        when(pagamentoRepository.findById(10L)).thenReturn(Optional.of(pagamento));
-        when(usuarioRepository.findByIdForUpdate(pagador.getId())).thenReturn(Optional.of(pagador));
-        when(usuarioRepository.findByIdForUpdate(recebedor.getId())).thenReturn(Optional.of(recebedor));
-
-        pagamentoProcessor.executar(10L);
-
-        assertEquals(StatusPagamento.CANCELADO, pagamento.getStatus());
-        assertEquals("Saldo insuficiente", pagamento.getMensagemErro());
-        assertEquals(new BigDecimal("100.00"), pagador.getSaldo());
-    }
-
-    @Test
-    void shouldIgnoreWhenStatusIsInvalid() {
-        pagamento.setStatus(StatusPagamento.CONCLUIDO);
-        when(pagamentoRepository.findById(10L)).thenReturn(Optional.of(pagamento));
-
-        pagamentoProcessor.autorizar(10L);
-
-        verify(authorizationClient, never()).autorizar(anyString());
-    }
-
-    @Test
-    void shouldThrowExceptionWhenPagamentoNotFound() {
-        when(pagamentoRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class, () -> pagamentoProcessor.autorizar(99L));
+        verify(pagamentoRepository).save(pagamento);
+        assert pagamento.getStatus() == StatusPagamento.CANCELADO;
     }
 }

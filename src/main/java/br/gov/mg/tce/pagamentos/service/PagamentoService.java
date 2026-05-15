@@ -15,7 +15,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -29,40 +28,34 @@ public class PagamentoService {
     // Contexto transacional aqui é necessário para garantir que o commit do pagamento seja feito antes da execução async ter início.
     @Transactional
     public Pagamento criarPagamento(PagamentoRequestDTO dto) {
-
         Usuario pagador = usuarioRepository.findByNumeroDocumento(dto.getPagadorDocumento())
                 .orElseThrow(() -> new BusinessException("Pagador não encontrado"));
 
         Usuario recebedor = usuarioRepository.findByNumeroDocumento(dto.getRecebedorDocumento())
                 .orElseThrow(() -> new BusinessException("Recebedor não encontrado"));
 
-        validarRegrasIniciais(pagador, recebedor,dto.getValor());
-
-        Pagamento pagamento = new Pagamento();
-        pagamento.setPagador(pagador);
-        pagamento.setRecebedor(recebedor);
-        pagamento.setValor(dto.getValor());
-        pagamento.setStatus(StatusPagamento.PENDENTE);
-        pagamento.setDataCriacao(LocalDateTime.now());
+        // A validação de regras iniciais e criação agora acontece nesse método
+        Pagamento pagamento = Pagamento.novoPagamento(pagador, recebedor, dto.getValor());
 
         Pagamento salvo = pagamentoRepository.save(pagamento);
 
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            // Se houver uma transação ativa, só dispara o assíncrono APÓS o sucesso do commit da transação atual
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    pagamentoProcessor.processarPagamentoAsync(salvo.getId());
-                }
-            });
-        } else {
-            // Fallback caso alguém remova o @Transactional por erro no futuro
-            pagamentoProcessor.processarPagamentoAsync(salvo.getId());
-        }
+        dispararProcessamentoAssincrono(salvo.getId());
 
         return salvo;
     }
 
+    private void dispararProcessamentoAssincrono(Long id) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    pagamentoProcessor.processarPagamentoAsync(id);
+                }
+            });
+        } else {
+            pagamentoProcessor.processarPagamentoAsync(id);
+        }
+    }
     public List<Pagamento> listarTodos() {
         return pagamentoRepository.findAll();
     }

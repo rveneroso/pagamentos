@@ -44,11 +44,11 @@ class UsuarioMapperTest {
         UsuarioResponseDTO dto = UsuarioMapper.toResponse(usuario);
 
         assertNotNull(dto);
-        assertEquals(usuario.getId(), dto.getId());
-        assertEquals(usuario.getNomeCompleto(), dto.getNomeCompleto());
-        assertEquals(usuario.getNumeroDocumento(), dto.getNumeroDocumento());
-        assertEquals(usuario.getEmail(), dto.getEmail());
-        assertEquals(usuario.getTipo(), dto.getTipo());
+        assertEquals(usuario.getId(), dto.id());
+        assertEquals(usuario.getNomeCompleto(), dto.nomeCompleto());
+        assertEquals(usuario.getNumeroDocumento(), dto.numeroDocumento());
+        assertEquals(usuario.getEmail(), dto.email());
+        assertEquals(usuario.getTipo(), dto.tipo());
     }
 
     @Test

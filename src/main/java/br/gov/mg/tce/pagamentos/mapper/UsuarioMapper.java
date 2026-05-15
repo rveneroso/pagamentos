@@ -20,16 +20,13 @@ public class UsuarioMapper {
     }
 
     public static UsuarioResponseDTO toResponse(Usuario usuario) {
-
-        UsuarioResponseDTO dto = new UsuarioResponseDTO();
-
-        dto.setId(usuario.getId());
-        dto.setNomeCompleto(usuario.getNomeCompleto());
-        dto.setNumeroDocumento(usuario.getNumeroDocumento());
-        dto.setEmail(usuario.getEmail());
-        dto.setTipo(usuario.getTipo());
-
-        return dto;
+        return new UsuarioResponseDTO(
+                usuario.getId(),
+                usuario.getNomeCompleto(),
+                usuario.getNumeroDocumento(),
+                usuario.getEmail(),
+                usuario.getTipo()
+        );
     }
 
 }

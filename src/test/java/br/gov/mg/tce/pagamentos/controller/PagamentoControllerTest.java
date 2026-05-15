@@ -2,15 +2,20 @@ package br.gov.mg.tce.pagamentos.controller;
 
 import br.gov.mg.tce.pagamentos.dto.request.PagamentoRequestDTO;
 import br.gov.mg.tce.pagamentos.entity.Pagamento;
+import br.gov.mg.tce.pagamentos.entity.Usuario;
 import br.gov.mg.tce.pagamentos.enums.StatusPagamento;
+import br.gov.mg.tce.pagamentos.service.AuthorizationRelayWorker;
+import br.gov.mg.tce.pagamentos.service.EmailOutboxProcessor;
 import br.gov.mg.tce.pagamentos.service.PagamentoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,7 +30,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "security.api-key=secret-key-123")
+@ActiveProfiles("test")
+@TestPropertySource(properties = {
+        "security.api-key=secret-key-123",
+        "spring.main.allow-bean-definition-overriding=true",
+        "spring.task.scheduling.enabled=false" // Desativa o agendamento global no teste
+})
 class PagamentoControllerTest {
 
     @Autowired
@@ -37,18 +47,44 @@ class PagamentoControllerTest {
     @MockBean
     private PagamentoService pagamentoService;
 
+    @MockBean
+    private AuthorizationRelayWorker authorizationRelayWorker;
+
+    @MockBean
+    private EmailOutboxProcessor emailOutboxProcessor;
+
     private final String API_KEY_HEADER = "x-api-key";
     private final String VALID_KEY = "secret-key-123";
 
+    @BeforeEach
+    void setUp() {
+        // Garante que o MockMvc imprima tudo no console em caso de erro
+    }
+
     @Test
     void shouldCreatePagamentoWithSuccess() throws Exception {
+
+
         PagamentoRequestDTO requestDTO = new PagamentoRequestDTO();
         requestDTO.setPagadorDocumento("52998224725");
         requestDTO.setRecebedorDocumento("11222333000181");
         requestDTO.setValor(new BigDecimal("100.00"));
 
+        // Usuários criados para evitar o NPE no construtor do DTO de resposta
+        Usuario pagador = new Usuario();
+        pagador.setId(1L);
+
+        Usuario recebedor = new Usuario();
+        recebedor.setId(2L);
+
         Pagamento pagamentoSalvo = new Pagamento();
         pagamentoSalvo.setId(1L);
+        pagamentoSalvo.setStatus(StatusPagamento.PENDENTE);
+        pagamentoSalvo.setValor(new BigDecimal("100.00"));
+
+        // Usuários são injetados no pagamento que o mock vai retornar
+        pagamentoSalvo.setPagador(pagador);
+        pagamentoSalvo.setRecebedor(recebedor);
 
         when(pagamentoService.criarPagamento(any(PagamentoRequestDTO.class))).thenReturn(pagamentoSalvo);
 
@@ -83,8 +119,8 @@ class PagamentoControllerTest {
 
     @Test
     void shouldReturnAllPagamentos() throws Exception {
-        Pagamento p1 = new Pagamento(); p1.setId(1L);
-        Pagamento p2 = new Pagamento(); p2.setId(2L);
+        Pagamento p1 = criarPagamentoMockado(1L);
+        Pagamento p2 = criarPagamentoMockado(2L);
         when(pagamentoService.listarTodos()).thenReturn(java.util.List.of(p1, p2));
 
         mockMvc.perform(get("/pagamentos")
@@ -98,8 +134,7 @@ class PagamentoControllerTest {
     @Test
     void shouldReturnPagamentoById() throws Exception {
         Long idExistente = 1L;
-        Pagamento pagamento = new Pagamento();
-        pagamento.setId(idExistente);
+        Pagamento pagamento = criarPagamentoMockado(idExistente);
 
         when(pagamentoService.buscarPorId(idExistente)).thenReturn(pagamento);
 
@@ -112,8 +147,7 @@ class PagamentoControllerTest {
     @Test
     void shouldReturnPagamentoByStatus() throws Exception {
         var statusBusca = StatusPagamento.CONCLUIDO;
-        Pagamento p = new Pagamento();
-        p.setId(10L);
+        Pagamento p = criarPagamentoMockado(10L);
         p.setStatus(statusBusca);
 
         when(pagamentoService.buscarPorStatus(statusBusca)).thenReturn(java.util.List.of(p));
@@ -129,5 +163,18 @@ class PagamentoControllerTest {
         mockMvc.perform(get("/pagamentos/status/STATUS_QUE_NAO_EXISTE")
                         .header(API_KEY_HEADER, VALID_KEY))
                 .andExpect(status().isBadRequest());
+    }
+
+    private Pagamento criarPagamentoMockado(Long id) {
+        Usuario usuarioDummy = new Usuario();
+        usuarioDummy.setId(99L);
+
+        Pagamento p = new Pagamento();
+        p.setId(id);
+        p.setStatus(StatusPagamento.PENDENTE);
+        p.setValor(new BigDecimal("100.00"));
+        p.setPagador(usuarioDummy);
+        p.setRecebedor(usuarioDummy);
+        return p;
     }
 }

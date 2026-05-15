@@ -30,4 +30,24 @@ public class EmailOutbox {
 
     private boolean processando;
     private LocalDateTime lockedAt;
+
+    public void iniciarProcessamento() {
+        this.processando = true;
+        this.lockedAt = LocalDateTime.now();
+    }
+
+    public void finalizarComSucesso() {
+        this.enviado = true;
+        this.enviadoEm = LocalDateTime.now();
+        this.processando = false;
+    }
+
+    public void incrementarTentativa() {
+        this.tentativas += 1;
+    }
+
+    public void registrarFalha() {
+        this.tentativas++;
+        this.processando = false;
+    }
 }

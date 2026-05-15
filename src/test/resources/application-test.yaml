@@ -1,6 +1,27 @@
+spring:
+  main:
+    web-application-type: servlet # Força o modo Web no teste
+    autoconfigure:
+      # Remove a configuração automática de segurança para o teste de integração
+      exclude:
+        - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+        - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: jdbc:h2:mem:pagamentos_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true # Útil para ver os locks e inserts no console de teste
+    properties:
+      hibernate:
+        format_sql: true
+
 clients:
   authorization:
     url: http://localhost:8080
-
   email:
     url: http://localhost:8080
